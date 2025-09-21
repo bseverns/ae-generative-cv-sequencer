@@ -1,0 +1,40 @@
+EESchema Schematic File Version 4
+EELAYER 43 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title "Lane Output: DAC → Buffer"
+Date "2025-09-21"
+Rev "0.1"
+$EndDescr
+
+Text GLabel 2000 2000 0 50 Input ~ 0
+DAC_IN
+
+$Comp
+L Amplifier_Operational:MCP6004 U1
+U 1 1 60000011
+P 3000 2000
+F 0 "U1" H 3000 2300 50 0000 C CNN
+F 1 "MCP6004" H 3000 2220 50 0000 C CNN
+$EndComp
+Wire Wire Line 2700 2000 2000 2000
+Wire Wire Line 3300 2000 2700 2000
+
+$Comp
+L Device:R R1
+U 1 1 60000012
+P 3450 2000
+F 0 "R1" V 3400 2000 50 0000 C CNN
+F 1 "1k (out)" V 3450 2000 50 0000 C CNN
+$EndComp
+Wire Wire Line 3600 2000 3850 2000
+Text GLabel 3850 2000 2 50 Output ~ 0
+CV_OUT
+
+Text GLabel 2900 1650 0 50 Input ~ 0
++5V
+Text GLabel 2900 2350 0 50 Input ~ 0
+GND
+$EndSCHEMATC

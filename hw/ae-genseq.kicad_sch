@@ -1,0 +1,72 @@
+EESchema Schematic File Version 4
+EELAYER 43 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title "Generative Ambient CV Sequencer (AE Modular)"
+Date "2025-09-21"
+Rev "0.1"
+Comp "YourName"
+Comment1 "uC: Arduino Pro Micro (5V)"
+Comment2 "I/O domain: 0–5V per AE Modular"
+$EndDescr
+
+$Comp
+L MCU_Module:Arduino_Pro_Micro U1
+U 1 1 5F000001
+P 2150 2300
+F 0 "U1" H 2150 3300 50  0000 C CNN
+F 1 "Arduino Pro Micro (ATmega32U4, 5V)" H 2150 3200 50  0000 C CNN
+F 2 "" H 2150 2300 50  0001 C CNN
+F 3 "" H 2150 2300 50  0001 C CNN
+$EndComp
+
+# AE bus (minimal power hookup)
+$Comp
+L Conn:Conn_02x05_Odd_Even J1
+U 1 1 5F000010
+P 900 1000
+F 0 "J1" H 900 1300 50  0000 C CNN
+F 1 "AE Bus 2x5" H 900 900 50  0000 C CNN
+F 2 "" H 900 1000 50  0001 C CNN
+F 3 "" H 900 1000 50  0001 C CNN
+$EndComp
+Text GLabel 650 900 0 50 Input ~ 0
++5V
+Text GLabel 650 1000 0 50 Input ~ 0
+GND
+Wire Wire Line 650 900  800 900
+Wire Wire Line 650 1000 800 1000
+
+# Example labels for wiring to sheets
+Text GLabel 3200 900 0 50 Input ~ 0
+PWM_L1
+Text GLabel 3200 1000 0 50 Input ~ 0
+PWM_L2
+Text GLabel 3200 1100 0 50 Input ~ 0
+PWM_L3
+Text GLabel 3200 1200 0 50 Input ~ 0
+PWM_SUM
+
+Text GLabel 2500 3800 0 50 Input ~ 0
+POT_L1_DV (A6)
+Text GLabel 2500 3950 0 50 Input ~ 0
+POT_L2_DV (A7)
+Text GLabel 2500 4100 0 50 Input ~ 0
+POT_L3_DV (A8)
+Text GLabel 2500 4250 0 50 Input ~ 0
+POT_L3_THR (A3)
+Text GLabel 2500 4400 0 50 Input ~ 0
+POT_OFFSET (A2)
+
+Text GLabel 5500 900 0 50 Input ~ 0
+JACK_GATE_L1
+Text GLabel 5500 1000 0 50 Input ~ 0
+JACK_GATE_L2
+Text GLabel 5500 1100 0 50 Input ~ 0
+JACK_CV_L3
+Text GLabel 5500 1200 0 50 Input ~ 0
+JACK_OFFSET_CV
+
+$EndSCHEMATC
