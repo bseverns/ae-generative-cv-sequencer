@@ -37,13 +37,18 @@ uint8_t PIN_G_L1_RISE;              // rising gate source for L1
 uint8_t PIN_G_L2_FALL;              // falling gate source for L2
 const uint8_t PIN_SW_L3_ABOVE = 2;  // compare above (1) / below (0)
 const uint8_t PIN_SW_WRAP_CLIP= 14; // wrap=1 / clip=0
+// Punky UX toggle: low = step editing (legacy behavior), high = probabilistic layer
+const uint8_t PIN_SW_EDIT_LAYER= 8; // we ride the pull-up, so "low" means the switch is thrown
 const uint8_t PIN_G_RESET_12  = 7;  // gate: reset lanes 1&2
 const uint8_t PIN_G_BOUNCE_23 = 15; // gate: toggle bounce for lanes 2&3
 const uint8_t PIN_G_RESET_ALL = 16; // gate: reset all
 
 // ====== Model state ======
-struct Lane { int16_t value; int16_t delta; bool bounce; int8_t dir; };
-Lane L1{512,0,false,+1}, L2{512,0,false,+1}, L3{512,0,false,+1};
+// Lane is the tiny synth brain: it remembers its CV, the step delta, bounce mode,
+// direction of travel, and how likely it is to fire when triggered. Probabilities
+// live on the same 0-1023 range as the ADC so we can use the raw pot readings.
+struct Lane { int16_t value; int16_t delta; bool bounce; int8_t dir; uint16_t prob; };
+Lane L1{512,0,false,+1,1023}, L2{512,0,false,+1,1023}, L3{512,0,false,+1,1023};
 bool wrapMode=false;
 
 // Edge tracking
@@ -54,6 +59,10 @@ inline uint16_t clamp10b(int32_t v){ if(v<0)return 0; if(v>1023)return 1023; ret
 inline uint16_t wrap10b(int32_t v){ int32_t m=v%1024; if(m<0)m+=1024; return (uint16_t)m; }
 inline uint16_t byMode(int32_t v){ return wrapMode ? wrap10b(v) : clamp10b(v); }
 inline uint16_t ADC10(uint8_t p){ return analogRead(p); }
+// Roll the dice for this lane. `random(1024)` matches our 10-bit UI scale so
+// 1023 == always step, 0 == never. This is called right at the point of service
+// so probability becomes an extra gating layer without changing the event model.
+inline bool shouldStep(const Lane& lane){ return random(1024) < lane.prob; }
 
 int16_t potToDelta(uint16_t raw, uint16_t deadband=24, uint16_t maxStep=64){
   int16_t c=(int16_t)raw-512;
@@ -84,6 +93,7 @@ void setupPins(){
   pinMode(PIN_G_L2_FALL, INPUT_PULLUP);
   pinMode(PIN_SW_L3_ABOVE, INPUT_PULLUP);
   pinMode(PIN_SW_WRAP_CLIP, INPUT_PULLUP);
+  pinMode(PIN_SW_EDIT_LAYER, INPUT_PULLUP);
   pinMode(PIN_G_RESET_12, INPUT_PULLUP);
   pinMode(PIN_G_BOUNCE_23, INPUT_PULLUP);
   pinMode(PIN_G_RESET_ALL, INPUT_PULLUP);
@@ -92,6 +102,8 @@ void setupPins(){
 void setup(){
   setupPins();
   if (USE_SAFE_PINS) { Serial.begin(115200); } // optional debug
+
+  randomSeed(analogRead(PIN_A_OFFSET));
 
   eL1.prev = digitalRead(PIN_G_L1_RISE);
   eL2.prev = digitalRead(PIN_G_L2_FALL);
@@ -111,13 +123,13 @@ void applyStep(Lane& L, int8_t sgn=+1){
 
 void serviceLane1_Rising(){
   bool now = !bRead(PIN_G_L1_RISE);
-  if (now && !eL1.prev) applyStep(L1, L1.dir);
+  if (now && !eL1.prev && shouldStep(L1)) applyStep(L1, L1.dir);
   eL1.prev = now;
 }
 
 void serviceLane2_Falling(){
   bool now = !bRead(PIN_G_L2_FALL);
-  if (!now && eL2.prev) applyStep(L2, L2.dir);
+  if (!now && eL2.prev && shouldStep(L2)) applyStep(L2, L2.dir);
   eL2.prev = now;
 }
 
@@ -129,7 +141,7 @@ void serviceLane3_Threshold(){
   static bool prevTrig=false;
 
   bool trig = condAbove ? above : !above;
-  if (trig && !prevTrig) applyStep(L3, L3.dir);
+  if (trig && !prevTrig && shouldStep(L3)) applyStep(L3, L3.dir);
   prevTrig = trig;
 }
 
@@ -137,9 +149,19 @@ void serviceLane3_Threshold(){
 void readUI(){
   wrapMode = !bRead(PIN_SW_WRAP_CLIP);
 
-  L1.delta = potToDelta(ADC10(PIN_A_L1_DV));
-  L2.delta = potToDelta(ADC10(PIN_A_L2_DV));
-  L3.delta = potToDelta(ADC10(PIN_A_L3_DV));
+  bool editProb = bRead(PIN_SW_EDIT_LAYER);
+  if (!editProb){
+    // Step edit layer: map pots through our taper to bipolar deltas.
+    L1.delta = potToDelta(ADC10(PIN_A_L1_DV));
+    L2.delta = potToDelta(ADC10(PIN_A_L2_DV));
+    L3.delta = potToDelta(ADC10(PIN_A_L3_DV));
+  } else {
+    // Probability layer: raw pot value is perfect in this context—higher values
+    // means “more likely this lane triggers when its condition hits.”
+    L1.prob = ADC10(PIN_A_L1_DV);
+    L2.prob = ADC10(PIN_A_L2_DV);
+    L3.prob = ADC10(PIN_A_L3_DV);
+  }
 
   static bool prevB=false;
   bool bNow = !bRead(PIN_G_BOUNCE_23);
