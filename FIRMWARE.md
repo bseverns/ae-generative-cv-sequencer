@@ -11,6 +11,41 @@ All lanes accumulate into a logical 10-bit range 0..1023 → mapped to 0..5 V.
 - **Clip vs Wrap:** either clamp to 0..FS or wrap (modulo full-scale)
 - **Bounce selector:** single button cycles L2-only → L3-only → both → none on release; a 0.8 s hold instantly nukes back to "none" and the release doesn’t advance.
 - **Resets:** gateable resets (e.g., L1&L2; ALL)
+- **Probability layer:** second UX layer activated with the EDIT switch; lets each lane decide how often to obey its trigger
+
+### Editing layers (pot multiplexing)
+
+We keep the panel minimal by letting the same three pots serve two jobs. Flip the `EDIT LAYER` toggle low (default) to sculpt bipolar deltas; flip it high to sculpt trigger probabilities. The firmware never overwrites the "other" value while you're tweaking, so you can bounce between modes without losing your step sizes.
+
+```mermaid
+flowchart LR
+    subgraph UI[Panel Controls]
+        POT1[L1 pot]
+        POT2[L2 pot]
+        POT3[L3 pot]
+        SWITCH((Edit Layer switch))
+    end
+
+    SWITCH -- low --> DELTA["Map pot → ΔV via potToDelta()"]
+    SWITCH -- high --> PROB["Use raw 0..1023 as lane.prob"]
+
+    POT1 --> DELTA
+    POT2 --> DELTA
+    POT3 --> DELTA
+
+    POT1 --> PROB
+    POT2 --> PROB
+    POT3 --> PROB
+
+    DELTA -->|updates| LANE[(Lane.delta)]
+    PROB -->|updates| LANE2[(Lane.prob)]
+```
+
+### Probability gating 101
+
+- Each lane owns a `prob` field (0 = never, 1023 = always). We seed the RNG with the offset pot so it gets a noisy-ish startup value.
+- When a lane's trigger condition hits, we call `shouldStep()` before applying the delta. That helper pulls a 10-bit random number so the comparison is intuitive.
+- You still get all the same wrap/bounce/reset behavior; probability just says "eh, maybe not this time" before the lane moves.
 
 ## Build targets
 

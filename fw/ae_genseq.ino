@@ -62,6 +62,8 @@ uint8_t PIN_G_L1_RISE;              // rising gate source for L1
 uint8_t PIN_G_L2_FALL;              // falling gate source for L2
 const uint8_t PIN_SW_L3_ABOVE = 2;  // compare above (1) / below (0)
 const uint8_t PIN_SW_WRAP_CLIP= 14; // wrap=1 / clip=0
+// Punky UX toggle: low = step editing (legacy behavior), high = probabilistic layer
+const uint8_t PIN_SW_EDIT_LAYER= 8; // we ride the pull-up, so "low" means the switch is thrown
 const uint8_t PIN_G_RESET_12  = 7;  // gate: reset lanes 1&2
 const uint8_t PIN_G_BOUNCE_23 = 15; // gate: toggle bounce for lanes 2&3
 const uint8_t PIN_G_RESET_ALL = 16; // gate: reset all
@@ -87,6 +89,10 @@ inline uint16_t clamp10b(int32_t v){ if(v<0)return 0; if(v>1023)return 1023; ret
 inline uint16_t wrap10b(int32_t v){ int32_t m=v%1024; if(m<0)m+=1024; return (uint16_t)m; }
 inline uint16_t byMode(int32_t v){ return wrapMode ? wrap10b(v) : clamp10b(v); }
 inline uint16_t ADC10(uint8_t p){ return analogRead(p); }
+// Roll the dice for this lane. `random(1024)` matches our 10-bit UI scale so
+// 1023 == always step, 0 == never. This is called right at the point of service
+// so probability becomes an extra gating layer without changing the event model.
+inline bool shouldStep(const Lane& lane){ return random(1024) < lane.prob; }
 
 // Convert a raw 10-bit pot reading into a signed delta step.
 // The deadband keeps tiny noise jitters from nudging the lane.
@@ -124,6 +130,7 @@ void setupPins(){
   pinMode(PIN_G_L2_FALL, INPUT_PULLUP);
   pinMode(PIN_SW_L3_ABOVE, INPUT_PULLUP);
   pinMode(PIN_SW_WRAP_CLIP, INPUT_PULLUP);
+  pinMode(PIN_SW_EDIT_LAYER, INPUT_PULLUP);
   pinMode(PIN_G_RESET_12, INPUT_PULLUP);
   pinMode(PIN_G_BOUNCE_23, INPUT_PULLUP);
   pinMode(PIN_G_RESET_ALL, INPUT_PULLUP);
@@ -172,7 +179,6 @@ void serviceLane3_Threshold(){
   bool above = cvin > thr;
   bool condAbove = !bRead(PIN_SW_L3_ABOVE); // active low toggle: above vs below
   static bool prevTrig=false;
-
   bool trig = condAbove ? above : !above; // pick the comparison direction
   if (trig && !prevTrig) applyStep(L3, L3.dir); // only on the rising edge
   prevTrig = trig;
