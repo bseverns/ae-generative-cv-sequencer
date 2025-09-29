@@ -9,7 +9,7 @@ All lanes accumulate into a logical 10-bit range 0..1023 → mapped to 0..5 V.
 
 ## Modes
 - **Clip vs Wrap:** either clamp to 0..FS or wrap (modulo full-scale)
-- **Bounce:** invert direction at boundaries for ping-pong motion
+- **Bounce selector:** single button cycles L2-only → L3-only → both → none on release; 0.8 s hold nukes back to "none".
 - **Resets:** gateable resets (e.g., L1&L2; ALL)
 
 ## Build targets

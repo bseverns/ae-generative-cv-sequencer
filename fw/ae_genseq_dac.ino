@@ -36,6 +36,9 @@ struct Lane { int16_t value; int16_t delta; bool bounce; int8_t dir; };
 Lane L1{512,0,false,+1}, L2{512,0,false,+1}, L3{512,0,false,+1};
 bool wrapMode=false;
 
+// Bounce selection UI (lanes 2 & 3)
+enum class BounceState : uint8_t { None=0, L2Only=1, L3Only=2, Both=3 };
+
 // ====== Helpers ======
 inline uint16_t clamp10b(int32_t v){ if(v<0)return 0; if(v>1023)return 1023; return (uint16_t)v; }
 inline uint16_t wrap10b(int32_t v){ int32_t m=v%1024; if(m<0)m+=1024; return (uint16_t)m; }
@@ -110,10 +113,36 @@ void readUI(){
   L2.delta = potToDelta(ADC10(PIN_A_L2_DV));
   L3.delta = potToDelta(ADC10(PIN_A_L3_DV));
 
-  static bool prevB=false;
-  bool bNow = (digitalRead(PIN_G_BOUNCE_23)==LOW);
-  if(bNow && !prevB){ L2.bounce=!L2.bounce; L3.bounce=!L3.bounce; }
-  prevB=bNow;
+  static BounceState bounceState = BounceState::None;
+  static bool prevBounceHigh = true;
+  static uint32_t pressStartMs = 0;
+  const uint32_t HOLD_RESET_MS = 800;
+
+  bool rawLevel = (digitalRead(PIN_G_BOUNCE_23)==HIGH); // HIGH when idle
+  uint32_t nowMs = millis();
+
+  if(!rawLevel && prevBounceHigh){
+    pressStartMs = nowMs; // button just got pressed
+  }
+
+  if(rawLevel && !prevBounceHigh){
+    uint32_t heldFor = nowMs - pressStartMs;
+    if(heldFor >= HOLD_RESET_MS){
+      bounceState = BounceState::None;
+    }else{
+      switch(bounceState){
+        case BounceState::None:   bounceState = BounceState::L2Only; break;
+        case BounceState::L2Only: bounceState = BounceState::L3Only; break;
+        case BounceState::L3Only: bounceState = BounceState::Both;   break;
+        case BounceState::Both:   bounceState = BounceState::None;   break;
+      }
+    }
+  }
+  prevBounceHigh = rawLevel;
+
+  L1.bounce = false;
+  L2.bounce = (bounceState == BounceState::L2Only || bounceState == BounceState::Both);
+  L3.bounce = (bounceState == BounceState::L3Only || bounceState == BounceState::Both);
 
   if(digitalRead(PIN_G_RESET_12)==LOW){ L1.value=512; L2.value=512; }
   if(digitalRead(PIN_G_RESET_ALL)==LOW){ L1.value=L2.value=L3.value=512; }

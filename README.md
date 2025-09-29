@@ -17,7 +17,8 @@ An event-driven, multi-lane, generative CV module for the AE Modular ecosystem (
 
 ## Firmware at a glance
 - Event handlers for rising/falling edges and threshold.
-- Modes: clip vs wrap; bounce; per-lane resets.
+- Modes: clip vs wrap; four-position bounce selector (L2 only, L3 only, both, or neither); per-lane resets.
+- Bounce push-button acts like a secret rotary switch: each release walks to the next combo, and a dramatic 0.8 s hold slams everything back to "no bounce" so you can regroup mid-jam.
 - Pin map matches the design notes in this repo.
 
 ## Status
