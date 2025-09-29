@@ -133,10 +133,11 @@ void setup(){
   setupPins();
   if (USE_SAFE_PINS) { Serial.begin(115200); } // optional debug
 
-  // Initialize edge trackers with the current hardware level so the first
-  // service pass does not accidentally fire a phantom step.
-  eL1.prev = digitalRead(PIN_G_L1_RISE);
-  eL2.prev = digitalRead(PIN_G_L2_FALL);
+  // Initialize edge trackers with the *active* state so the first service
+  // pass does not accidentally fire a phantom step. Because the gates are
+  // wired active-low we invert the readback here.
+  eL1.prev = !bRead(PIN_G_L1_RISE);
+  eL2.prev = !bRead(PIN_G_L2_FALL);
 }
 
 // ====== Core behaviors ======
@@ -188,24 +189,34 @@ void readUI(){
 
   // ---- Bounce mode state machine ---------------------------------------
   static BounceState bounceState = BounceState::None;
-  static bool prevBounceHigh = true; // raw pin level, high when idle
+  static bool prevBounceHigh = bRead(PIN_G_BOUNCE_23); // init to the real level
   static uint32_t pressStartMs = 0;
+  static bool holdClearedState = false; // latched when a long hold already reset
   const uint32_t HOLD_RESET_MS = 800; // press & hold to reset to “None”
 
   bool rawLevel = bRead(PIN_G_BOUNCE_23); // HIGH (1) idle, LOW (0) pressed
   uint32_t nowMs = millis();
 
   if (!rawLevel && prevBounceHigh){
-    pressStartMs = nowMs; // falling edge: button just got pressed
+    pressStartMs = nowMs;     // falling edge: button just got pressed
+    holdClearedState = false; // a new press arms both the cycle and hold paths
+  }
+
+  // While the button is held we watch for the “dramatic hold” to fire. Once
+  // the timer trips we immediately slam the mode back to "None" and latch
+  // that fact so the eventual release does not also cycle to the next state.
+  if (!rawLevel && !prevBounceHigh && !holdClearedState){
+    if (pressStartMs == 0){ pressStartMs = nowMs; }
+    if ((nowMs - pressStartMs) >= HOLD_RESET_MS){
+      bounceState = BounceState::None;
+      holdClearedState = true;
+    }
   }
 
   if (rawLevel && !prevBounceHigh){
-    // rising edge: button released. Decide whether it was a tap or a hold.
-    uint32_t heldFor = nowMs - pressStartMs;
-    if (heldFor >= HOLD_RESET_MS){
-      bounceState = BounceState::None; // long hold clears the bounce party
-    } else {
-      // short tap cycles through the four bounce states for lanes 2 & 3
+    // rising edge: button released. Only cycle if we did not already nuke
+    // the state via the long-hold logic above.
+    if (!holdClearedState){
       switch (bounceState){
         case BounceState::None:   bounceState = BounceState::L2Only; break;
         case BounceState::L2Only: bounceState = BounceState::L3Only; break;

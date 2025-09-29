@@ -90,7 +90,7 @@ void serviceLane1_Rising(){
 }
 
 void serviceLane2_Falling(){
-  static bool prev=true;
+  static bool prev=false; // idle level is HIGH → "not active" (false)
   bool now = (digitalRead(PIN_G_L2_FALL)==LOW);
   if(!now && prev) applyStep(L2, L2.dir);
   prev = now;
@@ -114,22 +114,32 @@ void readUI(){
   L3.delta = potToDelta(ADC10(PIN_A_L3_DV));
 
   static BounceState bounceState = BounceState::None;
-  static bool prevBounceHigh = true;
+  static bool prevBounceHigh = (digitalRead(PIN_G_BOUNCE_23)==HIGH); // idle read
   static uint32_t pressStartMs = 0;
+  static bool holdClearedState = false;
   const uint32_t HOLD_RESET_MS = 800;
 
   bool rawLevel = (digitalRead(PIN_G_BOUNCE_23)==HIGH); // HIGH when idle
   uint32_t nowMs = millis();
 
   if(!rawLevel && prevBounceHigh){
-    pressStartMs = nowMs; // button just got pressed
+    pressStartMs = nowMs;
+    holdClearedState = false;
+  }
+
+  // Long-hold detection mirrors the PWM build: once the threshold is crossed
+  // we immediately slam back to "None" and latch that fact so the release
+  // does not also advance to the next mode.
+  if(!rawLevel && !prevBounceHigh && !holdClearedState){
+    if(pressStartMs == 0){ pressStartMs = nowMs; }
+    if((nowMs - pressStartMs) >= HOLD_RESET_MS){
+      bounceState = BounceState::None;
+      holdClearedState = true;
+    }
   }
 
   if(rawLevel && !prevBounceHigh){
-    uint32_t heldFor = nowMs - pressStartMs;
-    if(heldFor >= HOLD_RESET_MS){
-      bounceState = BounceState::None;
-    }else{
+    if(!holdClearedState){
       switch(bounceState){
         case BounceState::None:   bounceState = BounceState::L2Only; break;
         case BounceState::L2Only: bounceState = BounceState::L3Only; break;

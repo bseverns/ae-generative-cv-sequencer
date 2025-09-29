@@ -9,7 +9,7 @@ All lanes accumulate into a logical 10-bit range 0..1023 → mapped to 0..5 V.
 
 ## Modes
 - **Clip vs Wrap:** either clamp to 0..FS or wrap (modulo full-scale)
-- **Bounce selector:** single button cycles L2-only → L3-only → both → none on release; 0.8 s hold nukes back to "none".
+- **Bounce selector:** single button cycles L2-only → L3-only → both → none on release; a 0.8 s hold instantly nukes back to "none" and the release doesn’t advance.
 - **Resets:** gateable resets (e.g., L1&L2; ALL)
 
 ## Build targets
