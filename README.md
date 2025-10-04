@@ -15,6 +15,18 @@ An event-driven, multi-lane, generative CV module for the AE Modular ecosystem (
 - Outputs: either PWM→RC→Buffer (simple) **or** SPI DAC (MCP4922×2)→Buffer (clean 12-bit).
 - Input conditioning for 0–5 V gates/CV (AE standard).
 
+### Panel layout roadmap
+If you want to hammer out a front panel before the perfboard dust settles, here’s a single-width AE sketch that keeps the
+inputs hugging the upper-left and the outputs stacked on the upper-right just like tangible AE gear. The mid-body controls
+call out the core gestures: ΔV knobs, add/sub toggles, per-lane resets, the mischievous bounce button, and the wrap/clip and
+global reset straddling the bottom edge.
+
+![Front panel layout for the generative CV sequencer module](hw/panel-layout.svg)
+
+> Think of it as a punk-rock blueprint: proportions match the AE single module canvas (≈25 mm × 128.5 mm), so you can drop
+> the SVG into Inkscape, swap fonts to the official AE face if you care, and laser-print or CNC the faceplate without
+> guesswork.
+
 ## Firmware at a glance
 - Event handlers for rising/falling edges and threshold.
 - Modes: clip vs wrap; four-position bounce selector (L2 only, L3 only, both, or neither); per-lane resets.
