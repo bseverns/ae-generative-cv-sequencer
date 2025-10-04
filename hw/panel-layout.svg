@@ -18,51 +18,51 @@
   <text x="124" y="104" text-anchor="middle" class="micro-label">event-driven</text>
 
   <!-- Input headers left -->
-  <g transform="translate(18,160)">
+  <g transform="translate(18,880)">
     <rect x="0" y="0" width="64" height="64" rx="8" fill="#e2e0dd" stroke="#111" stroke-width="2"/>
     <circle cx="32" cy="32" r="12" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="32" y="88" text-anchor="middle" class="jack-label">TRIG ↑</text>
   </g>
-  <g transform="translate(18,300)">
+  <g transform="translate(18,980)">
     <rect x="0" y="0" width="64" height="64" rx="8" fill="#e2e0dd" stroke="#111" stroke-width="2"/>
     <circle cx="32" cy="32" r="12" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="32" y="88" text-anchor="middle" class="jack-label">TRIG ↓</text>
   </g>
-  <g transform="translate(18,440)">
+  <g transform="translate(18,1080)">
     <rect x="0" y="0" width="64" height="64" rx="8" fill="#e2e0dd" stroke="#111" stroke-width="2"/>
     <circle cx="32" cy="32" r="12" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="32" y="88" text-anchor="middle" class="jack-label">CV IN</text>
   </g>
-  <g transform="translate(18,580)">
+  <g transform="translate(18,1180)">
     <rect x="0" y="0" width="64" height="64" rx="8" fill="#e2e0dd" stroke="#111" stroke-width="2"/>
     <circle cx="32" cy="32" r="12" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="32" y="88" text-anchor="middle" class="jack-label">RESET</text>
   </g>
 
   <!-- Output headers right -->
-  <g transform="translate(166,160)">
+  <g transform="translate(166,880)">
     <rect x="0" y="0" width="64" height="64" rx="8" fill="#e2e0dd" stroke="#111" stroke-width="2"/>
     <circle cx="32" cy="32" r="12" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="32" y="88" text-anchor="middle" class="jack-label">L1 OUT</text>
   </g>
-  <g transform="translate(166,300)">
+  <g transform="translate(166,980)">
     <rect x="0" y="0" width="64" height="64" rx="8" fill="#e2e0dd" stroke="#111" stroke-width="2"/>
     <circle cx="32" cy="32" r="12" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="32" y="88" text-anchor="middle" class="jack-label">L2 OUT</text>
   </g>
-  <g transform="translate(166,440)">
+  <g transform="translate(166,1080)">
     <rect x="0" y="0" width="64" height="64" rx="8" fill="#e2e0dd" stroke="#111" stroke-width="2"/>
     <circle cx="32" cy="32" r="12" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="32" y="88" text-anchor="middle" class="jack-label">L3 OUT</text>
   </g>
-  <g transform="translate(166,580)">
+  <g transform="translate(166,1180)">
     <rect x="0" y="0" width="64" height="64" rx="8" fill="#e2e0dd" stroke="#111" stroke-width="2"/>
     <circle cx="32" cy="32" r="12" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="32" y="88" text-anchor="middle" class="jack-label">SUM</text>
   </g>
 
   <!-- Lane stacks -->
-  <g transform="translate(80,200)">
+  <g transform="translate(80,210)">
     <text x="44" y="0" text-anchor="middle" class="lane-label">LANE 1</text>
     <circle cx="44" cy="50" r="30" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="44" y="110" text-anchor="middle" class="small-label">ΔV</text>
@@ -72,7 +72,7 @@
     <text x="44" y="212" text-anchor="middle" class="micro-label">RESET</text>
   </g>
 
-  <g transform="translate(80,500)">
+  <g transform="translate(80,520)">
     <text x="44" y="0" text-anchor="middle" class="lane-label">LANE 2</text>
     <circle cx="44" cy="50" r="30" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="44" y="110" text-anchor="middle" class="small-label">ΔV</text>
@@ -84,7 +84,7 @@
     <text x="44" y="270" text-anchor="middle" class="micro-label">BOUNCE</text>
   </g>
 
-  <g transform="translate(80,820)">
+  <g transform="translate(80,830)">
     <text x="44" y="0" text-anchor="middle" class="lane-label">LANE 3</text>
     <circle cx="44" cy="50" r="30" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="44" y="110" text-anchor="middle" class="small-label">ΔV</text>
@@ -97,15 +97,15 @@
   </g>
 
   <!-- Global controls -->
-  <g transform="translate(24,1120)">
+  <g transform="translate(24,1000)">
     <circle cx="44" cy="40" r="32" fill="#fff" stroke="#111" stroke-width="2"/>
     <text x="44" y="98" text-anchor="middle" class="small-label">OFFSET</text>
   </g>
-  <g transform="translate(120,1096)">
+  <g transform="translate(120,968)">
     <rect x="0" y="0" width="104" height="44" rx="12" fill="#cfc9c1" stroke="#111" stroke-width="2"/>
     <text x="52" y="28" text-anchor="middle" class="micro-label">WRAP ⇄ CLIP</text>
   </g>
-  <g transform="translate(120,1160)">
+  <g transform="translate(120,1040)">
     <rect x="0" y="0" width="104" height="44" rx="12" fill="#cfc9c1" stroke="#111" stroke-width="2"/>
     <text x="52" y="28" text-anchor="middle" class="micro-label">GLOBAL RESET</text>
   </g>
