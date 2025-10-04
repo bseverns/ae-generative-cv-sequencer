@@ -21,8 +21,6 @@ inputs hugging the upper-left and the outputs stacked on the upper-right just li
 call out the core gestures: ΔV knobs, add/sub toggles, per-lane resets, the mischievous bounce button, and the wrap/clip and
 global reset straddling the bottom edge.
 
-![Front panel layout for the generative CV sequencer module](hw/panel-layout.svg)
-
 > Think of it as a punk-rock blueprint: proportions match the AE single module canvas (≈25 mm × 128.5 mm), so you can drop
 > the SVG into Inkscape, swap fonts to the official AE face if you care, and laser-print or CNC the faceplate without
 > guesswork.
