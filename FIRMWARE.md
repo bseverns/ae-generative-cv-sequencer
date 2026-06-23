@@ -1,5 +1,10 @@
 # Firmware Design
 
+The firmware is organized as two Arduino sketches with the same event model:
+
+- `fw/ae_genseq.ino` for PWM outputs.
+- `fw/ae_genseq_dac.ino` for MCP4922 SPI DAC outputs.
+
 ## Event model (3 lanes)
 - **Lane 1 (rise):** on rising gate/trigger, add/subtract ΔV (set by bipolar pot)
 - **Lane 2 (fall):** on falling gate, add/subtract ΔV
@@ -13,9 +18,9 @@ All lanes accumulate into a logical 10-bit range 0..1023 → mapped to 0..5 V.
 - **Resets:** gateable resets (e.g., L1&L2; ALL)
 - **Probability layer:** second UX layer activated with the EDIT switch; lets each lane decide how often to obey its trigger
 
-### Editing layers (pot multiplexing)
+### Editing layers
 
-We keep the panel minimal by letting the same three pots serve two jobs. Flip the `EDIT LAYER` toggle low (default) to sculpt bipolar deltas; flip it high to sculpt trigger probabilities. The firmware never overwrites the "other" value while you're tweaking, so you can bounce between modes without losing your step sizes.
+The same three lane pots serve two jobs. Set the `EDIT LAYER` input low to edit bipolar deltas; set it high to edit trigger probabilities. The firmware only updates the active layer, so switching between layers preserves the other value.
 
 ```mermaid
 flowchart LR
@@ -45,7 +50,7 @@ flowchart LR
 
 - Each lane owns a `prob` field (0 = never, 1023 = always). We seed the RNG with the offset pot so it gets a noisy-ish startup value.
 - When a lane's trigger condition hits, we call `shouldStep()` before applying the delta. That helper pulls a 10-bit random number so the comparison is intuitive.
-- You still get all the same wrap/bounce/reset behavior; probability just says "eh, maybe not this time" before the lane moves.
+- You still get the same wrap, bounce, and reset behavior. Probability only decides whether a detected event moves the lane.
 
 ## Build targets
 
@@ -54,9 +59,21 @@ flowchart LR
 | PWM | `fw/ae_genseq.ino` | D3, D10, D5, D9 → RC → buffer | Minimal BOM; slight PWM ripple; you can raise PWM carrier via timer tweaks |
 | DAC | `fw/ae_genseq_dac.ino` | MCP4922×2 (L1/L2 on chip A, L3/SUM on chip B) | Clean 12-bit CV; needs SPI wiring and VREF care |
 
+## Edit-layer pin notes
+
+- PWM build: `PIN_SW_EDIT_LAYER = D8`.
+- DAC build: `PIN_SW_EDIT_LAYER = D4` because D8 and D9 are used as MCP4922 chip-select pins.
+- Both builds use internal pull-ups. Low edits deltas; high edits probabilities.
+
 ### SPI DAC wiring (quick ref)
 - Common: MOSI, SCK, GND, +5 V
 - Chip selects: `CS_A` (L1/L2), `CS_B` (L3/SUM)
 - VREF = 5 V (decouple with 100 nF + 10 µF)
 - LDAC tied low (or GPIO for simultaneous update)
 - DAC outputs → `lane_dac_buf` → jacks
+
+## Known firmware limits
+
+- No EEPROM persistence yet; probability and delta settings are session state.
+- No debouncing beyond simple edge tracking; noisy switches may need hardware cleanup or firmware debounce.
+- The PWM build defaults to D0/D1 gate inputs for panel compatibility, but `USE_SAFE_PINS=true` moves gates to D4/D6 for serial debugging.

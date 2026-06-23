@@ -1,35 +1,48 @@
-# Generative Ambient CV Sequencer (AE Modular)
+# Generative Ambient CV Sequencer for AE Modular
 
-An event-driven, multi-lane, generative CV module for the AE Modular ecosystem (0–5 V domain).
+An event-driven, multi-lane generative CV module experiment for the AE Modular 0-5 V ecosystem.
 
-## What it does
-- 3 independent “lanes” that modify a CV value on **events**:
-  - Lane 1: rising gate/trigger
-  - Lane 2: falling gate
-  - Lane 3: CV threshold crossing (>, < via switch)
-- Global offset, per-lane add/sub amounts, optional **wrap** or **clip**, **bounce** behavior, and **resets**.
-- 4 outputs: Lane1, Lane2, Lane3, and a **Summed** output.
+This repository is both a build log and a clean-room reimplementation study. It is also an intentional homage to the people and communities whose ideas, patience, care, and technical generosity made the work possible. See [CREDITS.md](CREDITS.md) and [SOURCES.md](SOURCES.md) for attribution and provenance.
 
-## Hardware at a glance
-- MCU: Arduino Pro Micro (ATmega32U4, 5 V).
-- Outputs: either PWM→RC→Buffer (simple) **or** SPI DAC (MCP4922×2)→Buffer (clean 12-bit).
-- Input conditioning for 0–5 V gates/CV (AE standard).
+## Current Status
 
-### Panel layout roadmap
-If you want to hammer out a front panel before the perfboard dust settles, here’s a single-width AE sketch that keeps the
-inputs hugging the upper-left and the outputs stacked on the upper-right just like tangible AE gear. The mid-body controls
-call out the core gestures: ΔV knobs, add/sub toggles, per-lane resets, the mischievous bounce button, and the wrap/clip and
-global reset straddling the bottom edge.
+Prototype documentation and firmware scaffold. The design has KiCad hardware files, panel artwork, PWM and DAC firmware variants, safety notes, and a draft bill of materials. Treat it as experimental until the validation checklist in [EXPERIMENT.md](EXPERIMENT.md) has measured results attached.
 
-> Think of it as a punk-rock blueprint: proportions match the AE single module canvas (≈25 mm × 128.5 mm), so you can drop
-> the SVG into Inkscape, swap fonts to the official AE face if you care, and laser-print or CNC the faceplate without
-> guesswork.
+## What It Does
 
-## Firmware at a glance
-- Event handlers for rising/falling edges and threshold.
-- Modes: clip vs wrap; four-position bounce selector (L2 only, L3 only, both, or neither); per-lane resets.
-- Bounce push-button acts like a secret rotary switch: each release walks to the next combo, and a dramatic 0.8 s hold instantly yanks the mode back to "no bounce" (the release won’t advance) so you can regroup mid-jam.
-- Pin map matches the design notes in this repo.
+- Maintains three independent CV lanes that move only when events occur.
+- Lane 1 steps on a rising gate or trigger.
+- Lane 2 steps on a falling gate.
+- Lane 3 steps on a CV threshold crossing, selectable above or below.
+- Provides global offset, per-lane step amount, event probability, wrap or clip behavior, bounce modes, and resets.
+- Outputs Lane 1, Lane 2, Lane 3, and a summed/averaged CV output.
 
-## Status
-This is a documented reimplementation inspired by The Tuesday Night Machines’ AE forum project. See `SOURCES.md` and `CREDITS.md` for attribution and links.
+## Hardware At A Glance
+
+- MCU: Arduino Pro Micro, ATmega32U4, 5 V.
+- Output option A: PWM into RC filters and buffers.
+- Output option B: two MCP4922 SPI DACs into buffers.
+- Input conditioning is designed around AE Modular 0-5 V CV and +5 V gates.
+
+The panel sketch in [hw/panel-layout.svg](hw/panel-layout.svg) targets a single-width AE-style module face. It should be treated as a working layout reference until the hardware and ergonomics are validated on a physical build.
+
+## Firmware At A Glance
+
+- [fw/ae_genseq.ino](fw/ae_genseq.ino): PWM output build.
+- [fw/ae_genseq_dac.ino](fw/ae_genseq_dac.ino): MCP4922 DAC output build.
+- Each lane has a delta value and a probability value. The edit-layer switch lets the same three lane pots edit either movement size or trigger probability.
+- The bounce button cycles L2 only, L3 only, both, and none on release. Holding it for 0.8 seconds resets bounce to none without advancing on release.
+
+## Repository Map
+
+- [EXPERIMENT.md](EXPERIMENT.md): purpose, hypotheses, protocol, validation checklist, and evidence log.
+- [HARDWARE.md](HARDWARE.md): electrical notes, block diagram, suggested parts, and pin mapping.
+- [FIRMWARE.md](FIRMWARE.md): event model, UI model, firmware variants, and DAC wiring.
+- [BOM.md](BOM.md): prototype bill of materials.
+- [SAFETY_NOTES.md](SAFETY_NOTES.md): AE voltage and interop cautions.
+- [CONTRIBUTING.md](CONTRIBUTING.md): contribution expectations.
+- [SUPPORT.md](SUPPORT.md): support scope and issue-reporting guidance.
+
+## License Status
+
+Licensing is not finalized. See [LICENSE_PLACEHOLDER.md](LICENSE_PLACEHOLDER.md) before reusing code, docs, schematics, or artwork.

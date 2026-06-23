@@ -10,6 +10,6 @@
   - Optional 74HC14 for gate cleanup
 - Output resistors: 4× 1 kΩ
 - Pots: L1 ΔV, L2 ΔV, L3 ΔV, L3 threshold, global offset (plus any extras)
-- Switches/Buttons: L3 >/<, wrap/clip, bounce gate, reset gates
+- Switches/Buttons: L3 >/<, wrap/clip, edit layer, bounce gate, reset gates
 - Decoupling: 100 nF per IC, 10 µF bulk near +5 V input
 - AE bus 2×5 header, panel hardware, jacks/headers as per your panel

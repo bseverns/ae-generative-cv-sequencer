@@ -23,5 +23,11 @@
 - **Pots (ADC):** A6 (L1 ΔV), A7 (L2 ΔV), A8 (L3 ΔV), A3 (L3 threshold), A2 (offset)
 - **CV ins:** A1 (L3 comparator input), A0 (offset CV)
 - **Switches/Gates:** D2 (L3 above/below), D14 (wrap/clip), D7 (reset L1&L2), D15 (bounce L2&L3), D16 (reset all), D0 (L1 rising gate), D1 (L2 falling gate)
+- **Edit layer:** D8 on the PWM build; D4 on the DAC build because D8/D9 are DAC chip selects.
+- **DAC chip selects:** D8 (`CS_A`) and D9 (`CS_B`) on the DAC build.
 
 > Note: D0/D1 share USB CDC on 32U4. For serial debugging, use the `USE_SAFE_PINS` build option in the PWM sketch to move gates to D4/D6.
+
+## Prototype validation
+
+Before connecting a new build to other modules, work through the checklist in `EXPERIMENT.md`. At minimum, confirm rail limits, output range, reset behavior, and the selected output method with a meter or scope.

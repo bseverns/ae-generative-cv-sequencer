@@ -27,13 +27,14 @@ const uint8_t PIN_G_L1_RISE  = 0;
 const uint8_t PIN_G_L2_FALL  = 1;
 const uint8_t PIN_SW_L3_ABOVE= 2;
 const uint8_t PIN_SW_WRAP_CLIP=14;
+const uint8_t PIN_SW_EDIT_LAYER=4; // DAC build keeps D8/D9 free for chip selects
 const uint8_t PIN_G_RESET_12 = 7;
 const uint8_t PIN_G_BOUNCE_23= 15;
 const uint8_t PIN_G_RESET_ALL= 16;
 
 // ====== Model ======
-struct Lane { int16_t value; int16_t delta; bool bounce; int8_t dir; };
-Lane L1{512,0,false,+1}, L2{512,0,false,+1}, L3{512,0,false,+1};
+struct Lane { int16_t value; int16_t delta; uint16_t prob; bool bounce; int8_t dir; };
+Lane L1{512,0,1023,false,+1}, L2{512,0,1023,false,+1}, L3{512,0,1023,false,+1};
 bool wrapMode=false;
 
 // Bounce selection UI (lanes 2 & 3)
@@ -44,6 +45,7 @@ inline uint16_t clamp10b(int32_t v){ if(v<0)return 0; if(v>1023)return 1023; ret
 inline uint16_t wrap10b(int32_t v){ int32_t m=v%1024; if(m<0)m+=1024; return (uint16_t)m; }
 inline uint16_t byMode(int32_t v){ return wrapMode? wrap10b(v) : clamp10b(v); }
 inline uint16_t ADC10(uint8_t p){ return analogRead(p); }
+inline bool shouldStep(const Lane& lane){ return random(1024) < lane.prob; }
 
 int16_t potToDelta(uint16_t raw, uint16_t deadband=24, uint16_t maxStep=64){
   int16_t c=(int16_t)raw-512;
@@ -85,14 +87,14 @@ void applyStep(Lane& L, int8_t sgn=+1){
 void serviceLane1_Rising(){
   static bool prev=false;
   bool now = (digitalRead(PIN_G_L1_RISE)==LOW);
-  if(now && !prev) applyStep(L1, L1.dir);
+  if(now && !prev && shouldStep(L1)) applyStep(L1, L1.dir);
   prev = now;
 }
 
 void serviceLane2_Falling(){
   static bool prev=false; // idle level is HIGH → "not active" (false)
   bool now = (digitalRead(PIN_G_L2_FALL)==LOW);
-  if(!now && prev) applyStep(L2, L2.dir);
+  if(!now && prev && shouldStep(L2)) applyStep(L2, L2.dir);
   prev = now;
 }
 
@@ -103,15 +105,23 @@ void serviceLane3_Threshold(){
   bool above = x>thr;
   bool condAbove = (digitalRead(PIN_SW_L3_ABOVE)==LOW);
   bool trig = condAbove? above : !above;
-  if(trig && !prevTrig) applyStep(L3, L3.dir);
+  if(trig && !prevTrig && shouldStep(L3)) applyStep(L3, L3.dir);
   prevTrig = trig;
 }
 
 void readUI(){
   wrapMode = (digitalRead(PIN_SW_WRAP_CLIP)==LOW);
-  L1.delta = potToDelta(ADC10(PIN_A_L1_DV));
-  L2.delta = potToDelta(ADC10(PIN_A_L2_DV));
-  L3.delta = potToDelta(ADC10(PIN_A_L3_DV));
+
+  bool editProbability = (digitalRead(PIN_SW_EDIT_LAYER)==HIGH); // LOW = delta, HIGH = prob
+  if(editProbability){
+    L1.prob = ADC10(PIN_A_L1_DV);
+    L2.prob = ADC10(PIN_A_L2_DV);
+    L3.prob = ADC10(PIN_A_L3_DV);
+  }else{
+    L1.delta = potToDelta(ADC10(PIN_A_L1_DV));
+    L2.delta = potToDelta(ADC10(PIN_A_L2_DV));
+    L3.delta = potToDelta(ADC10(PIN_A_L3_DV));
+  }
 
   static BounceState bounceState = BounceState::None;
   static bool prevBounceHigh = (digitalRead(PIN_G_BOUNCE_23)==HIGH); // idle read
@@ -183,12 +193,14 @@ void setup(){
   pinMode(PIN_G_L2_FALL, INPUT_PULLUP);
   pinMode(PIN_SW_L3_ABOVE, INPUT_PULLUP);
   pinMode(PIN_SW_WRAP_CLIP, INPUT_PULLUP);
+  pinMode(PIN_SW_EDIT_LAYER, INPUT_PULLUP);
   pinMode(PIN_G_RESET_12, INPUT_PULLUP);
   pinMode(PIN_G_BOUNCE_23, INPUT_PULLUP);
   pinMode(PIN_G_RESET_ALL, INPUT_PULLUP);
 
   SPI.begin();
   SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+  randomSeed(((uint32_t)ADC10(PIN_A_OFFSET) << 10) ^ ADC10(PIN_A_OFFSET_CV) ^ micros());
 }
 
 void loop(){

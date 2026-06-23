@@ -62,17 +62,18 @@ uint8_t PIN_G_L1_RISE;              // rising gate source for L1
 uint8_t PIN_G_L2_FALL;              // falling gate source for L2
 const uint8_t PIN_SW_L3_ABOVE = 2;  // compare above (1) / below (0)
 const uint8_t PIN_SW_WRAP_CLIP= 14; // wrap=1 / clip=0
-// Punky UX toggle: low = step editing (legacy behavior), high = probabilistic layer
-const uint8_t PIN_SW_EDIT_LAYER= 8; // we ride the pull-up, so "low" means the switch is thrown
+// Edit-layer toggle: LOW = delta editing, HIGH = probability editing.
+const uint8_t PIN_SW_EDIT_LAYER= 8;
 const uint8_t PIN_G_RESET_12  = 7;  // gate: reset lanes 1&2
 const uint8_t PIN_G_BOUNCE_23 = 15; // gate: toggle bounce for lanes 2&3
 const uint8_t PIN_G_RESET_ALL = 16; // gate: reset all
 
 // ====== Model state ======
-// Each lane carries its current value (0–1023 ≈ 0–5 V), a step size, a bounce
-// flag, and a direction (+1 or -1). We seed them at mid-rail pointing upwards.
-struct Lane { int16_t value; int16_t delta; bool bounce; int8_t dir; };
-Lane L1{512,0,false,+1}, L2{512,0,false,+1}, L3{512,0,false,+1};
+// Each lane carries its current value (0–1023 ≈ 0–5 V), a step size, a trigger
+// probability, a bounce flag, and a direction (+1 or -1). We seed them at
+// mid-rail, always stepping, and pointing upwards.
+struct Lane { int16_t value; int16_t delta; uint16_t prob; bool bounce; int8_t dir; };
+Lane L1{512,0,1023,false,+1}, L2{512,0,1023,false,+1}, L3{512,0,1023,false,+1};
 bool wrapMode=false; // false → clamp at rails, true → wrap-around mayhem.
 
 // Bounce selection UI (lanes 2 & 3)
@@ -139,6 +140,7 @@ void setupPins(){
 void setup(){
   setupPins();
   if (USE_SAFE_PINS) { Serial.begin(115200); } // optional debug
+  randomSeed(((uint32_t)ADC10(PIN_A_OFFSET) << 10) ^ ADC10(PIN_A_OFFSET_CV) ^ micros());
 
   // Initialize edge trackers with the *active* state so the first service
   // pass does not accidentally fire a phantom step. Because the gates are
@@ -163,13 +165,13 @@ void applyStep(Lane& L, int8_t sgn=+1){
 
 void serviceLane1_Rising(){
   bool now = !bRead(PIN_G_L1_RISE); // active low: LOW means gate present
-  if (now && !eL1.prev) applyStep(L1, L1.dir); // fire on rising edge
+  if (now && !eL1.prev && shouldStep(L1)) applyStep(L1, L1.dir); // fire on rising edge
   eL1.prev = now;
 }
 
 void serviceLane2_Falling(){
   bool now = !bRead(PIN_G_L2_FALL); // still active-low
-  if (!now && eL2.prev) applyStep(L2, L2.dir); // fire on falling edge
+  if (!now && eL2.prev && shouldStep(L2)) applyStep(L2, L2.dir); // fire on falling edge
   eL2.prev = now;
 }
 
@@ -180,7 +182,7 @@ void serviceLane3_Threshold(){
   bool condAbove = !bRead(PIN_SW_L3_ABOVE); // active low toggle: above vs below
   static bool prevTrig=false;
   bool trig = condAbove ? above : !above; // pick the comparison direction
-  if (trig && !prevTrig) applyStep(L3, L3.dir); // only on the rising edge
+  if (trig && !prevTrig && shouldStep(L3)) applyStep(L3, L3.dir); // only on the rising edge
   prevTrig = trig;
 }
 
@@ -188,10 +190,18 @@ void serviceLane3_Threshold(){
 void readUI(){
   wrapMode = !bRead(PIN_SW_WRAP_CLIP); // switch is active-low: LOW = wrap mode
 
-  // Convert pot positions into usable ΔV step sizes for each lane.
-  L1.delta = potToDelta(ADC10(PIN_A_L1_DV));
-  L2.delta = potToDelta(ADC10(PIN_A_L2_DV));
-  L3.delta = potToDelta(ADC10(PIN_A_L3_DV));
+  // The edit-layer switch decides whether the three lane pots edit movement
+  // size or event probability. The inactive layer keeps its previous value.
+  bool editProbability = bRead(PIN_SW_EDIT_LAYER); // LOW = delta, HIGH = prob
+  if (editProbability){
+    L1.prob = ADC10(PIN_A_L1_DV);
+    L2.prob = ADC10(PIN_A_L2_DV);
+    L3.prob = ADC10(PIN_A_L3_DV);
+  } else {
+    L1.delta = potToDelta(ADC10(PIN_A_L1_DV));
+    L2.delta = potToDelta(ADC10(PIN_A_L2_DV));
+    L3.delta = potToDelta(ADC10(PIN_A_L3_DV));
+  }
 
   // ---- Bounce mode state machine ---------------------------------------
   static BounceState bounceState = BounceState::None;
